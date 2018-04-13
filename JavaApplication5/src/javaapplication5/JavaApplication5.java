@@ -1,67 +1,68 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+Создать приложение с 3 потоками для следующей задачи: 
+		3 работника выполняют следующую работу: 
+			1-ый копает яму, 
+			2-ой сажает дерево,  
+			3-ий подвязывает саженец к кольям. 
+	Работа идет строго по очереди. Число саженцев задается параметром.  
+	Выводить на дисплей номер работника и номер саженца. 
  */
 package javaapplication5;
+import java.util.concurrent.Phaser;
 import java.util.Scanner;
-import java.util.concurrent.locks.*;
-
 /**
  *
  * @author Black
  */
 public class JavaApplication5 {
 
-    static int a;
+    static int count = 10;
     public static void main(String[] args) {
-       Thread firstEmployee = new Thread(() -> {
-         try {
-            for (int i = 0; i < a; i++) {
-               Thread.sleep(100); 
-               System.out.println("1 работник. Саженец: " + (i+1) + "/"+ a);
-               Thread.sleep(100);               
-               
-            }
-         } catch (InterruptedException ie) {         
-         }
-      });
-
-      // метод join будет ждать выполнение потока
-      Thread secondEmployee = new Thread(() -> {
-         try {            
-               for (int i = 0; i < a; i++) {
-                  Thread.sleep(101);
-                  System.out.println("2 работник. Саженец: " + (i+1) + "/"+ a);
-                  Thread.sleep(100);
-                  
-
-               }
-         } catch (InterruptedException ie) {            
-         }
-      });
-
-      Thread thirdEmployee = new Thread(() -> {
-         try {            
-               for (int i = 0; i < a; i++) {
-                  Thread.sleep(102);
-                  System.out.println("3 работник. Саженец: " + (i+1) + "/"+ a+"\n");
-                  Thread.sleep(100);
-                  
-
-
-               }            
-         } catch (InterruptedException ie) {          
-         }
-      });
-
-      Scanner in = new Scanner(System.in);
-        System.out.println("Введите количество деревьев:");
-        a = Integer.parseInt(in.nextLine());           
-      
-      firstEmployee.start();
-      secondEmployee.start();
-      thirdEmployee.start();
+        Scanner in = new Scanner(System.in);
+        System.out.printf("Введите количество деревьев: ");
+        count = in.nextInt();
+        Phaser phaser = new Phaser(1);
+        new Thread(new PhaseThread(phaser, "Копаем яму",1, count)).start();
+        new Thread(new PhaseThread(phaser, "Сажаем саженец",2, count)).start();
+        new Thread(new PhaseThread(phaser, "Подвязываем ",3, count)).start();
+       
+        
+        for(int i = 1; i<=count; i++)
+        {
+        phaser.arriveAndAwaitAdvance();
+        System.out.println("");
+        }
+        phaser.arriveAndDeregister();
+    }
+}
+ 
+class PhaseThread implements Runnable{ 
+    Phaser phaser;
+    String name;
+    int order;
+    int count;
+    
+    PhaseThread(Phaser p, String n, int o, int c){         
+        this.phaser=p;
+        this.name=n;
+        this.order = o*10;
+        this.count = c;
+        phaser.register();
     }
     
+    public void run(){
+         
+        for(int i = 1; i<=count; i++)
+        {
+            try{
+                Thread.sleep(100+order);
+            }
+            catch(InterruptedException ex){
+                System.out.println(ex.getMessage());
+            }
+            System.out.println(name + " \t\t["+ i + " / "+ count + "]");
+            phaser.arriveAndAwaitAdvance();
+        }       
+        phaser.arriveAndDeregister();
+    }
 }
